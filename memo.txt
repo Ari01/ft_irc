@@ -1,0 +1,123 @@
+network tuto : https://beej.us/guide/bgnet/html/#what-is-a-socket
+
+** SOCKET ADRESS **
+struct addrinfo {
+	int              ai_flags;     // AI_PASSIVE, AI_CANONNAME, etc.
+	int              ai_family;    // AF_INET, AF_INET6, AF_UNSPEC
+	int              ai_socktype;  // SOCK_STREAM, SOCK_DGRAM
+	int              ai_protocol;  // use 0 for "any"
+	size_t           ai_addrlen;   // size of ai_addr in bytes
+	struct sockaddr *ai_addr;      // struct sockaddr_in or _in6
+	char            *ai_canonname; // full canonical hostname
+
+	struct addrinfo *ai_next;      // linked list, next node
+};
+
+** SOCKET **
+struct sockaddr {
+	unsigned short    sa_family;    // address family, AF_xxx
+	char              sa_data[14];  // 14 bytes of protocol address
+}; 
+
+** FREEADDRINFO **
+void freeaddrinfo(struct addrinfo *res);
+
+** INTERNET SOCKET FOR IPV4 **
+struct sockaddr_in {
+	short int          sin_family;  // Address family, AF_INET
+	unsigned short int sin_port;    // Port number
+	struct in_addr     sin_addr;    // Internet address
+	unsigned char      sin_zero[8]; // Same size as struct sockaddr
+};
+
+** IN_ADDR
+struct in_addr {
+	uint32_t s_addr; // 32-bit int (4 bytes)
+};
+
+** BYTE ORDER **
+- host byte order can be little or big endian depending on system
+- always assyme host byte order is wrong and convert it
+- htons = host to network short
+- htonl = host to network long
+- ntohs = network to host short
+- ntohl = network to host long
+
+char *inet_ntoa(struct in_addr in)
+- converts Internet host address (in network byte order) to a string in IPV4 dotted-decimal notation
+
+** GET ADDRINFO **
+int getaddrinfo(const char *node,     // e.g. "www.example.com" or IP
+				const char *service,  // e.g. "http" or port number (irc or 194)
+				const struct addrinfo *hints,
+				struct addrinfo **res);
+
+** SOCKET **
+int socket(int domain, int type, int protocol); // fill it with res infos from getaddrinfo
+
+** BIND **
+int bind(int sockfd, struct sockaddr *my_addr, int addrlen);
+
+** PORT RANGE  : 1024 to 65535 **
+
+** SETSOCKOPT **
+int yes = 1
+setsockopt(fd,SOL_SOCKET,SO_REUSEADDR,&yes,sizeof yes) == -1)
+- sometimes when reruning server, bind might fail claiming "address already in use"
+- a socket might still be connected and hogging the port
+- in that case use setsockopt to allow program to reuse the port
+
+** CONNECT **
+int connect(int sockfd, struct sockaddr *serv_addr, int addrlen);
+
+** LISTEN **
+int listen(int sockfd, int backlog);	// backlog = number of connections allowed in incoming queue
+
+** ACCEPT (blocking) **
+int accept(int sockfd, struct sockaddr *addr, socklen_t *addrlen);	// returns fd for send and recv
+
+** SEND **
+int send(int sockfd,		// got with connect or socket
+		const void *msg,	// msg to send
+		int len,			// length of msg
+		int flags);			// usually set to 0
+							// returns number of bytes actually sent out or -1 on error
+
+** RECV (blocking) **
+int recv(int sockfd, void *buf, int len, int flags);
+	// same params as send
+	// returns number of bytes read
+	// if 0, connection has been closed on remote side
+	
+** FCNTL (make nonblocking socket) **
+fcntl(sockfd, F_SETFL, O_NONBLOCK);
+
+** POLL **
+int poll(struct pollfd fds[],	// array of fds to monitor
+		nfds_t nfds,			// size of array
+		int timeout);			// time in milliseconds before poll timing out (set to -1 for no TO)
+								// returns number of structures which have nonzero revents fields
+								   (events or errors occured)
+								// returns 0 if timeout and no fds were ready
+								// returns -1 if error occured
+
+** STRUCT POLLFD **
+struct pollfd {
+	int fd;         // the socket descriptor
+	short events;   // bitmap of events we're interested in
+					// POLLIN = data is rdy to recv on this socket
+					// POLLOUT = data is rdy to be sent without blocking
+	short revents;  // when poll() returns, bitmap of events that occurred
+};
+
+** CALL ORDER **
+1. Memset hints with 0s
+2. Fill hints with relevant infos (hints.ai_family, ai_socktype, ai_flags = AI_PASSIVE)
+3. Call get_addrinfo to setup structs addrinfos (res)
+4. Call socket with res infos (ai_family, ai_socktype, ai_protocol). Socket() returns a fd
+5. Bind the socket with a port on local machine
+6. Freeaddrinfo
+7. Listen (wait for connections which will be queued)
+8. Accept (accept connection and get an fd to send and rev)
+9. Send/Recv messages
+10. Close fd
