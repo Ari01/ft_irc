@@ -1,0 +1,26 @@
+CONNECT
+- /connect <address>|<network> [<port> [<password> [<nick>]]]
+- if there's no password, set it to "-"
+
+SERVER
+- /server add <address> [<port> [<password>]]
+- /server remove <address> [<port>]
+- /server : displays list of connected servers
+
+CHANNEL JOIN
+- /join #channel1,#channel2...
+- if no #+&! specified before channel name, # automatically used
+- authorized characters in chan names : SPACE, BELL, NUL, CR, LF or coma (',')
+
+- /join #channel password to join channel with password
+- /join #secret1,#public,#secret2 pass1,x,pass2 to join multiple chans
+- #public didn4t have pw so we used x as its pw (pw sent to chan without pw dont matter)
+
+- /join -<server tag> #channel, to join channel in different server than active one
+- example : /join -efnet #irssi
+
+- /part [<channels>] [<part message>] to leave channels
+- example : /part bybye all leaves the active channal with "byebye all" msg
+			/part #chan1,#chan2 leaves those chans
+
+- /quote join 0 leaves all channels joined

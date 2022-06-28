@@ -81,6 +81,7 @@ Server::Server()
 
 	// add listener fd in pfds
 	pfds.push_back(new_pfd(listener_fd, POLLIN, 0));
+	fcntl(listener_fd, F_SETFL, O_NONBLOCK);
 }
 
 // DESTRUCTOR
@@ -98,9 +99,9 @@ void	Server::run()
 	socklen_t				addrlen;
 	char					buff[256];
 
-	nfds = pfds.size();
 	while (1)
 	{
+		nfds = pfds.size();
 		if (poll(&pfds[0], nfds, -1) == -1)
 		{
 			perror("poll");
@@ -119,6 +120,7 @@ void	Server::run()
 					else
 					{
 						pfds.push_back(new_pfd(new_fd, POLLIN, 0));
+						fcntl(new_fd, F_SETFL, O_NONBLOCK);
 						printf("pollserver: new connection from socket %s\n",
 								inet_ntoa(remote_addr.sin_addr));
 					}
@@ -138,10 +140,12 @@ void	Server::run()
 					}
 					else
 					{
+						buff[nbytes] = 0;
 						printf("reveived = %s\n", buff);
 					}
 				}
 			}
 		}
+		send(new_fd, ":denden 251 denden :yo", 256, 0);
 	}
 }
